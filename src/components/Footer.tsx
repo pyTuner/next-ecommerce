@@ -87,7 +87,7 @@ const Footer = () => {
           <span className="font-semibold">
             Secure Payments
           </span>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-3">
             <Image src="/discover.png" alt="discover" width={40} height={20} />
             <Image src="/skrill.png" alt="skrill" width={40} height={20} />
             <Image src="/paypal.png" alt="paypal" width={40} height={20} />
