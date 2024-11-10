@@ -3,6 +3,7 @@ import { products } from "@wix/stores";
 import DOMPurify from "isomorphic-dompurify";
 import Image from "next/image"
 import Link from "next/link"
+import Pagination from "./Pagination";
 
 const PRODUCT_PER_PAGE = 20;
 const ProductList = async ({
@@ -12,17 +13,38 @@ const ProductList = async ({
 }: {
     categoryId: string;
     limit?: number;
-    searchParams?:any;
+    searchParams?: any;
 }) => {
 
     const wixClient = await wixClientServer();
-    const res = await wixClient.products
-        .queryProducts()
-        .eq("collectionIds", categoryId)
-        .limit(limit || PRODUCT_PER_PAGE)
-        .find();
 
-    console.log(res.items[0].additionalInfoSections);
+    // filter
+    const productQuery = wixClient.products
+        .queryProducts()
+        .startsWith("name", searchParams?.name || "")
+        .eq("collectionIds", categoryId)
+        .hasSome("productType", [searchParams?.type || "physical", "digital"])
+        .gt("priceData.price", searchParams?.min || 0)
+        .lt("priceData.price", searchParams?.max || 9999999)
+        .limit(limit || PRODUCT_PER_PAGE)
+        .skip(searchParams?.page ? parseInt(searchParams?.page) * (limit || PRODUCT_PER_PAGE) : 0)
+    // .find();
+
+    if (searchParams?.sort) {
+        const [sortType, sortBy] = searchParams.sort.split(" ");
+
+        if (sortType === "asc") {
+            productQuery.ascending(sortBy)
+        }
+
+        if (sortType === "desc") {
+            productQuery.descending(sortBy)
+        }
+    }
+
+    const res = await productQuery.find();
+
+    console.log(res.items[0]?.additionalInfoSections);
     return (
         <div className="mt-12 flex gap-x-8 gap-y-16 justify-between flex-wrap">
             {res.items.map((product: products.Product) =>
@@ -73,7 +95,11 @@ const ProductList = async ({
                 </Link>
             )
             )}
-
+            <Pagination
+                currentPage={res.currentPage || 0}
+                hasPrev={res.hasPrev()}
+                hasNext={res.hasNext()}
+            />
         </div>
     )
 }
